@@ -555,6 +555,31 @@ version(OPENSSL_NO_SRP) {} else {
 
 } // OPENSSL_NO_SSL_INTERN
 
+alias ALPNCallback = int function(SSL *ssl, const(char) **output, ubyte* outlen, const(char) *input, uint inlen, void *arg);
+void SSL_CTX_set_alpn_select_cb(SSL_CTX *ctx, ALPNCallback cb, void *arg);
+int SSL_set_alpn_protos(SSL *ssl, const char *data, uint len);
+int SSL_CTX_set_alpn_protos(SSL_CTX *ctx, const char* protos, uint protos_len);
+void SSL_get0_alpn_selected(const SSL *ssl, const(char)** data, uint *len);
+
+enum SSL_CTRL_SET_MIN_PROTO_VERSION = 123;
+
+long SSL_CTX_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg);
+
+enum TLS1_VERSION  =                  0x0301;
+enum TLS1_1_VERSION =                 0x0302;
+enum TLS1_2_VERSION  =                0x0303;
+enum TLS1_3_VERSION   =               0x0304;
+enum TLS_MAX_VERSION   =              TLS1_3_VERSION;
+enum DTLS1_VERSION   =                0xFEFF;
+enum DTLS1_2_VERSION  =              0xFEFD;
+/* TODO(TLS1.3) REMOVE ME: Version indicators for draft version */
+enum TLS1_3_VERSION_DRAFT_26 =        0x7f1a;
+enum TLS1_3_VERSION_DRAFT_27  =       0x7f1b;
+enum TLS1_3_VERSION_DRAFT      =      0x7f1c;
+
+/* Special value for method supporting multiple versions */
+enum TLS_ANY_VERSION      =           0x10000;
+
 enum SSL_OP_MICROSOFT_SESS_ID_BUG = 0x00000001;
 enum SSL_OP_NETSCAPE_CHALLENGE_BUG = 0x00000002;
 /* Allow initial connection to servers that don't support RI */
@@ -566,7 +591,7 @@ enum SSL_OP_SAFARI_ECDHE_ECDSA_BUG = 0x00000040;
 enum SSL_OP_SSLEAY_080_CLIENT_DH_BUG = 0x00000080;
 enum SSL_OP_TLS_D5_BUG = 0x00000100;
 enum SSL_OP_TLS_BLOCK_PADDING_BUG = 0x00000200;
-
+enum SSL_OP_NO_RENEGOTIATION  =      0x40000000L;
 /* Hasn't done anything since OpenSSL 0.9.7h, retained for compatibility */
 enum SSL_OP_MSIE_SSLV2_RSA_PADDING = 0x0;
 
@@ -615,8 +640,10 @@ enum SSL_OP_TLS_ROLLBACK_BUG = 0x00800000;
 enum SSL_OP_NO_SSLv2 = 0x01000000;
 enum SSL_OP_NO_SSLv3 = 0x02000000;
 enum SSL_OP_NO_TLSv1 = 0x04000000;
-enum SSL_OP_NO_TLSv1_2 = 0x08000000L;
 enum SSL_OP_NO_TLSv1_1 = 0x10000000L;
+enum SSL_OP_NO_TLSv1_2 = 0x08000000L;
+enum SSL_OP_NO_TLSv1_3 = 0x20000000L;
+enum SSL_OP_ALLOW_NO_DHE_KEX    =      0x00000400L;
 
 /* These next two were never actually used for anything since SSLeay
  * zap so we have some more flags.
@@ -661,24 +688,12 @@ enum SSL_MODE_SEND_SERVERHELLO_TIME = 0x00000040L;
 /* Note: SSL[_CTX]_set_{options,mode} use |= op on the previous value,
  * they cannot be used to clear bits. */
 
-auto SSL_CTX_set_options()(SSL_CTX* ctx, c_long op) {
-	return SSL_CTX_ctrl(ctx,SSL_CTRL_OPTIONS,op,null);
-}
-auto SSL_CTX_clear_options()(SSL_CTX* ctx, c_long op) {
-	return SSL_CTX_ctrl(ctx,SSL_CTRL_CLEAR_OPTIONS,op,null);
-}
-auto SSL_CTX_get_options()(SSL_CTX* ctx) {
-	return SSL_CTX_ctrl(ctx,SSL_CTRL_OPTIONS,0,null);
-}
-auto SSL_set_options()(SSL* ssl, c_long op) {
-	return SSL_ctrl(ssl,SSL_CTRL_OPTIONS,op,null);
-}
-auto SSL_clear_options()(SSL* ssl, c_long op) {
-	return SSL_ctrl(ssl,SSL_CTRL_CLEAR_OPTIONS,op,null);
-}
-auto SSL_get_options()(SSL* ssl) {
-	return SSL_ctrl(ssl,SSL_CTRL_OPTIONS,0,null);
-}
+uint SSL_CTX_get_options(const SSL_CTX *ctx);
+uint SSL_get_options(const SSL *s);
+uint SSL_CTX_clear_options(SSL_CTX *ctx, uint op);
+uint SSL_clear_options(SSL *s, uint op);
+uint SSL_CTX_set_options(SSL_CTX *ctx, uint op);
+uint SSL_set_options(SSL *s, uint op);
 
 auto SSL_CTX_set_mode()(SSL_CTX* ctx, c_long op) {
 	return SSL_CTX_ctrl(ctx,SSL_CTRL_MODE,op,null);
@@ -1662,6 +1677,9 @@ enum SSL_CTRL_CLEAR_MODE = 78;
 enum SSL_CTRL_GET_EXTRA_CHAIN_CERTS = 82;
 enum SSL_CTRL_CLEAR_EXTRA_CHAIN_CERTS = 83;
 
+enum SSL_CTRL_SET_GROUPS_LIST = 92;
+enum SSL_CTRL_SET_SIGALGS_LIST = 98;
+
 auto DTLSv1_get_timeout()(SSL* ssl, void* arg) {
     return SSL_ctrl(ssl,DTLS_CTRL_GET_TIMEOUT,0,arg);
 }
@@ -1699,6 +1717,14 @@ auto SSL_CTX_set_tmp_dh()(SSL_CTX* ctx, void* dh) {
 }
 auto SSL_CTX_set_tmp_ecdh()(SSL_CTX* ctx, void* ecdh) {
     return SSL_CTX_ctrl(ctx,SSL_CTRL_SET_TMP_ECDH,0,ecdh);
+}
+
+auto SSL_CTX_set1_groups_list()(SSL_CTX* ctx, const(char)* groups) {
+    return SSL_CTX_ctrl(ctx,SSL_CTRL_SET_GROUPS_LIST,0,cast(void*)groups);
+}
+
+auto SSL_CTX_set1_sigalgs_list()(SSL_CTX* ctx, const(char)* sigalgs) {
+    return SSL_CTX_ctrl(ctx,SSL_CTRL_SET_SIGALGS_LIST,0,cast(void*)sigalgs);
 }
 
 auto SSL_need_tmp_RSA()(SSL* ssl) {
@@ -1913,6 +1939,7 @@ void	SSL_free(SSL* ssl);
 int 	SSL_accept(SSL* ssl);
 int 	SSL_connect(SSL* ssl);
 int 	SSL_read(SSL* ssl,void* buf,int num);
+int 	SSL_read_ex(SSL* ssl,void* buf, size_t num, size_t *readbytes);
 int 	SSL_peek(SSL* ssl,void* buf,int num);
 int 	SSL_write(SSL* ssl,const(void)* buf,int num);
 c_long	SSL_ctrl(SSL* ssl,int cmd, c_long larg, void* parg);
@@ -1923,14 +1950,21 @@ c_long	SSL_CTX_callback_ctrl(SSL_CTX*, int, ExternC!(void function()) );
 int	SSL_get_error(const(SSL)* s,int ret_code);
 const(char)* SSL_get_version(const(SSL)* s);
 
+	// #  define sk_num OPENSSL_sk_num
+	extern(C) int OPENSSL_sk_num(const void *);
+	extern(C) int sk_num(const(_STACK)* p) { return OPENSSL_sk_num(p); }
+
+	// #  define sk_value OPENSSL_sk_value
+	extern(C) void *OPENSSL_sk_value(const void *, int);
+extern(C) void* sk_value(const(_STACK)* p, int i) { return OPENSSL_sk_value(p, i); }
+
 /* This sets the 'default' SSL version that SSL_new() will create */
 int SSL_CTX_set_ssl_version(SSL_CTX* ctx, const(SSL_METHOD)* meth);
+const(SSL_METHOD)* TLS_method();
 
-version(OPENSSL_NO_SSL2) {} else {
-const(SSL_METHOD)* SSLv2_method();		/* SSLv2 */
-const(SSL_METHOD)* SSLv2_server_method();	/* SSLv2 */
-const(SSL_METHOD)* SSLv2_client_method();	/* SSLv2 */
-}
+const(SSL_METHOD)* TLS_client_method();
+
+const(SSL_METHOD)* TLS_server_method();
 
 const(SSL_METHOD)* SSLv3_method();		/* SSLv3 */
 const(SSL_METHOD)* SSLv3_server_method();	/* SSLv3 */
@@ -1984,7 +2018,13 @@ void SSL_set_accept_state(SSL* s);
 
 c_long SSL_get_default_timeout(const(SSL)* s);
 
-int SSL_library_init();
+struct ossl_init_settings_st {
+    char *appname;
+}
+alias OPENSSL_INIT_SETTINGS = ossl_init_settings_st;
+const  OPENSSL_INIT_LOAD_SSL_STRINGS    =   0x00200000L;
+const OPENSSL_INIT_LOAD_CRYPTO_STRINGS   = 0x00000002L;
+int OPENSSL_init_ssl(ulong opts, const OPENSSL_INIT_SETTINGS *settings);
 
 char* SSL_CIPHER_description(const(SSL_CIPHER)*,char* buf,int size);
 STACK_OF!(X509_NAME) *SSL_dup_CA_list(STACK_OF!(X509_NAME) *sk);

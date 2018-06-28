@@ -852,6 +852,10 @@ alias EVP_seed_cfb128 EVP_seed_cfb;
 const(EVP_CIPHER)* EVP_seed_ofb();
 }
 
+version(OPENSSL_NO_CHACHA) {} else {
+	const(EVP_CIPHER)* EVP_chacha20_poly1305();
+}
+
 void OPENSSL_add_all_algorithms_noconf();
 void OPENSSL_add_all_algorithms_conf();
 

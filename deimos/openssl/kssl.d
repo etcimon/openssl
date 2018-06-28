@@ -131,7 +131,6 @@ struct kssl_err_st {
 alias kssl_err_st KSSL_ERR;
 
 
-
 // FIXME: krb5.h not available, thus just declare an opaque type.
 struct KSSL_CTX;
 /+

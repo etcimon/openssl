@@ -306,12 +306,28 @@ const(char)* BIO_method_name(const(BIO)* b);
 int BIO_method_type(const(BIO)* b);
 
 alias typeof(*(ExternC!(void function(bio_st*, int, const(char)*, int, c_long, c_long))).init) bio_info_cb;
-
+/*
+struct bio_method_st {
+    int type;
+    char *name;
+    int (*bwrite) (BIO *, const char *, size_t, size_t *);
+    int (*bwrite_old) (BIO *, const char *, int);
+    int (*bread) (BIO *, char *, size_t, size_t *);
+    int (*bread_old) (BIO *, char *, int);
+    int (*bputs) (BIO *, const char *);
+    int (*bgets) (BIO *, char *, int);
+    long (*ctrl) (BIO *, int, long, void *);
+    int (*create) (BIO *);
+    int (*destroy) (BIO *);
+    long (*callback_ctrl) (BIO *, int, BIO_info_cb *);
+};*/
 struct bio_method_st {
 	int type;
 	const(char)* name;
-	ExternC!(int function(BIO*, const(char)*, int)) bwrite;
-	ExternC!(int function(BIO*, char*, int)) bread;
+	ExternC!(int function(BIO*, const(char)*, size_t, size_t*)) bwrite;
+	ExternC!(int function(BIO*, const(char)*, int)) bwrite_legacy;
+	ExternC!(int function(BIO*, char*, size_t, size_t*)) bread;
+	ExternC!(int function(BIO*, char*, int)) bread_legacy;
 	ExternC!(int function(BIO*, const(char)*)) bputs;
 	ExternC!(int function(BIO*, char*, int)) bgets;
 	ExternC!(c_long function(BIO*, int, c_long, void*)) ctrl;
@@ -321,11 +337,35 @@ struct bio_method_st {
 	}
 alias bio_method_st BIO_METHOD;
 
+/*
+struct bio_st {
+    const BIO_METHOD *method;
+    /* bio, mode, argp, argi, argl, ret
+    BIO_callback_fn callback;
+    BIO_callback_fn_ex callback_ex;
+    char *cb_arg;               /* first argument for the callback 
+    int init;
+    int shutdown;
+    int flags;                  /* extra storage 
+    int retry_reason;
+    int num;
+    void *ptr;
+    struct bio_st *next_bio;    /* used by filter BIOs 
+    struct bio_st *prev_bio;    /* used by filter BIOs 
+    CRYPTO_REF_COUNT references;
+    uint64_t num_read;
+    uint64_t num_write;
+    CRYPTO_EX_DATA ex_data;
+    CRYPTO_RWLOCK *lock;
+};*/
+
 struct bio_st
 	{
 	BIO_METHOD* method;
 	/* bio, mode, argp, argi, argl, ret */
-	ExternC!(c_long function(bio_st*,int,const(char)*,int, c_long,long)) callback;
+	ExternC!(c_long function(bio_st*,int,const(char)*,int, c_long,c_long)) callback;
+	ExternC!(c_long function(bio_st*,int,const(char)*,size_t len, int argi,
+                                   c_long argl, int ret, size_t *processed)) callback_ex;
 	char* cb_arg; /* first argument for the callback */
 
 	int init_;
@@ -337,10 +377,11 @@ struct bio_st
 	bio_st* next_bio;	/* used by filter BIOs */
 	bio_st* prev_bio;	/* used by filter BIOs */
 	int references;
-	c_ulong num_read;
-	c_ulong num_write;
+	ulong num_read;
+	ulong num_write;
 
 	CRYPTO_EX_DATA ex_data;
+	void* lock;
 	};
 
 /+mixin DECLARE_STACK_OF!(BIO);+/
