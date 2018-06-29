@@ -563,8 +563,6 @@ void SSL_get0_alpn_selected(const SSL *ssl, const(char)** data, uint *len);
 
 enum SSL_CTRL_SET_MIN_PROTO_VERSION = 123;
 
-long SSL_CTX_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg);
-
 enum TLS1_VERSION  =                  0x0301;
 enum TLS1_1_VERSION =                 0x0302;
 enum TLS1_2_VERSION  =                0x0303;
@@ -690,10 +688,10 @@ enum SSL_MODE_SEND_SERVERHELLO_TIME = 0x00000040L;
 
 uint SSL_CTX_get_options(const SSL_CTX *ctx);
 uint SSL_get_options(const SSL *s);
-uint SSL_CTX_clear_options(SSL_CTX *ctx, uint op);
-uint SSL_clear_options(SSL *s, uint op);
-uint SSL_CTX_set_options(SSL_CTX *ctx, uint op);
-uint SSL_set_options(SSL *s, uint op);
+uint SSL_CTX_clear_options(SSL_CTX *ctx, c_long op);
+uint SSL_clear_options(SSL *s, c_long op);
+uint SSL_CTX_set_options(SSL_CTX *ctx, c_long op);
+uint SSL_set_options(SSL *s, c_long op);
 
 auto SSL_CTX_set_mode()(SSL_CTX* ctx, c_long op) {
 	return SSL_CTX_ctrl(ctx,SSL_CTRL_MODE,op,null);
