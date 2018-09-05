@@ -1759,6 +1759,7 @@ void BIO_ssl_shutdown(BIO* ssl_bio);
 }
 
 int	SSL_CTX_set_cipher_list(SSL_CTX*,const(char)* str);
+int	SSL_CTX_set_ciphersuites(SSL_CTX*,const(char)* str);
 SSL_CTX* SSL_CTX_new(const(SSL_METHOD)* meth);
 void	SSL_CTX_free(SSL_CTX*);
 c_long SSL_CTX_set_timeout(SSL_CTX* ctx,c_long t);
