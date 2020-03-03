@@ -549,6 +549,8 @@ auto EVP_delete_digest_alias()(const(char)* alias_) {
 	return OBJ_NAME_remove(alias_,OBJ_NAME_TYPE_MD_METH|OBJ_NAME_ALIAS);
 }
 
+EVP_MD_CTX* EVP_MD_CTX_new();
+void	EVP_MD_CTX_free(EVP_MD_CTX* ctx);
 void	EVP_MD_CTX_init(EVP_MD_CTX* ctx);
 int	EVP_MD_CTX_cleanup(EVP_MD_CTX* ctx);
 EVP_MD_CTX* EVP_MD_CTX_create();
